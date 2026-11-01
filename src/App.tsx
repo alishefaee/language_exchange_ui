@@ -1,16 +1,19 @@
 import React from "react";
 import { BrowserRouter } from "react-router";
 import { ThemeProvider, CssBaseline } from "@mui/material";
-import { minimalistTheme } from "./theme.ts";
+import { theme } from "./theme.ts";
+import { AuthProvider } from "./hooks/useAuth";
 import { AppRouter } from "./routers";
 
 export const App: React.FC = () => {
   return (
-    <ThemeProvider theme={minimalistTheme}>
+    <ThemeProvider theme={theme}>
       <CssBaseline />
-      <BrowserRouter>
-        <AppRouter />
-      </BrowserRouter>
+      <AuthProvider>
+        <BrowserRouter>
+          <AppRouter />
+        </BrowserRouter>
+      </AuthProvider>
     </ThemeProvider>
   );
 };

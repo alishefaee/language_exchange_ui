@@ -1,6 +1,6 @@
 import { createTheme } from "@mui/material/styles";
 
-export const minimalistTheme = createTheme({
+export const theme = createTheme({
   palette: {
     mode: "light",
     primary: {
@@ -54,16 +54,7 @@ export const minimalistTheme = createTheme({
           borderRadius: "0.5rem",
           transition: "background-color 120ms ease, border-color 120ms ease",
         },
-        containedPrimary: {
-          backgroundColor: "#0F172A",
-          "&:hover": { backgroundColor: "#1E293B" },
-          "&:active": { backgroundColor: "#1E293B" },
-        },
-        containedSecondary: {
-          backgroundColor: "#2563EB",
-          "&:hover": { backgroundColor: "#1D4ED8" },
-          "&:active": { backgroundColor: "#1D4ED8" },
-        },
+        // Base variants like 'outlined', 'contained', or 'text' are still valid in styleOverrides
         outlined: {
           backgroundColor: "#FFFFFF",
           borderColor: "#E2E8F0",
@@ -74,6 +65,25 @@ export const minimalistTheme = createTheme({
           },
         },
       },
+      // Use variants for specific combinations of props
+      variants: [
+        {
+          props: { variant: "contained", color: "primary" },
+          style: {
+            backgroundColor: "#0F172A",
+            "&:hover": { backgroundColor: "#1E293B" },
+            "&:active": { backgroundColor: "#1E293B" },
+          },
+        },
+        {
+          props: { variant: "contained", color: "secondary" },
+          style: {
+            backgroundColor: "#2563EB",
+            "&:hover": { backgroundColor: "#1D4ED8" },
+            "&:active": { backgroundColor: "#1D4ED8" },
+          },
+        },
+      ],
     },
     MuiPaper: {
       defaultProps: { elevation: 0 },
