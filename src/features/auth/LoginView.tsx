@@ -1,14 +1,41 @@
 import React, { useState } from "react";
-import { Box, Paper, Typography, TextField, Button, Link } from "@mui/material";
-import { AuthShell } from "../../components/layout/AuthShell";
+import { Box, Paper, Typography, TextField, Button, Link, Alert } from "@mui/material";
+import { Link as RouterLink, useNavigate } from "react-router";
+import { useAuth } from "../../hooks/useAuth";
+import { ApiError, ApiStatus } from "../../types/api";
 
 export const LoginView: React.FC = () => {
+  const { login, isLoading } = useAuth();
+  const navigate = useNavigate();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
+  const [generalError, setGeneralError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Calls POST /api/v1/auth/login
+    setFieldErrors({});
+    setGeneralError(null);
+
+    try {
+      const loggedInUser = await login({ email, password });
+      if (loggedInUser.onboardingStep !== "completed") {
+        navigate("/onboarding", { replace: true });
+      } else {
+        navigate("/discover", { replace: true });
+      }
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.status === ApiStatus.VALIDATION_FAILED && err.fieldErrors) {
+          setFieldErrors(err.fieldErrors);
+        } else {
+          setGeneralError(err.message);
+        }
+      } else {
+        setGeneralError("Unable to connect to the server.");
+      }
+    }
   };
 
   const inputStyles = {
@@ -16,18 +43,11 @@ export const LoginView: React.FC = () => {
       height: "44px",
       backgroundColor: "#F8FAFC",
       borderRadius: "0.5rem",
-      "& fieldset": {
-        borderColor: "#E2E8F0",
-      },
-      "&:hover fieldset": {
-        borderColor: "#94A3B8",
-      },
+      "& fieldset": { borderColor: "#E2E8F0" },
+      "&:hover fieldset": { borderColor: "#94A3B8" },
       "&.Mui-focused": {
         backgroundColor: "#FFFFFF",
-        "& fieldset": {
-          borderColor: "#2563EB",
-          borderWidth: "1px",
-        },
+        "& fieldset": { borderColor: "#2563EB", borderWidth: "1px" },
       },
     },
     "& .MuiInputBase-input": {
@@ -38,15 +58,23 @@ export const LoginView: React.FC = () => {
   };
 
   return (
-    <AuthShell>
+    <Box
+      sx={{
+        flex: 1,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
       <Paper
         component="form"
         onSubmit={handleSubmit}
+        noValidate
         sx={{
           width: "100%",
           maxWidth: "400px",
           p: "1.5rem",
-          borderRadius: "1rem", // rounded-lg for cards
+          borderRadius: "1rem",
           backgroundColor: "#FFFFFF",
           border: "1px solid #E2E8F0",
           display: "flex",
@@ -62,6 +90,21 @@ export const LoginView: React.FC = () => {
             Enter your credentials to access your language threads.
           </Typography>
         </Box>
+
+        {generalError && (
+          <Alert
+            severity="error"
+            sx={{
+              borderRadius: "0.5rem",
+              border: "1px solid #EF4444",
+              backgroundColor: "#FEF2F2",
+              color: "#991B1B",
+              py: 0.5,
+            }}
+          >
+            {generalError}
+          </Alert>
+        )}
 
         <Box sx={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
           <Typography
@@ -79,6 +122,8 @@ export const LoginView: React.FC = () => {
             fullWidth
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            error={Boolean(fieldErrors.email?.length)}
+            helperText={fieldErrors.email?.[0]}
             sx={inputStyles}
           />
         </Box>
@@ -99,6 +144,8 @@ export const LoginView: React.FC = () => {
             fullWidth
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            error={Boolean(fieldErrors.password?.length)}
+            helperText={fieldErrors.password?.[0]}
             sx={inputStyles}
           />
         </Box>
@@ -108,9 +155,10 @@ export const LoginView: React.FC = () => {
           variant="contained"
           color="primary"
           fullWidth
+          disabled={isLoading}
           sx={{ mt: "0.5rem" }}
         >
-          Log in
+          {isLoading ? "Signing in..." : "Log in"}
         </Button>
 
         <Box
@@ -123,7 +171,8 @@ export const LoginView: React.FC = () => {
           <Typography variant="caption" sx={{ color: "#64748B" }}>
             Don&apos;t have an account?{" "}
             <Link
-              href="/register"
+              component={RouterLink}
+              to="/register"
               underline="none"
               sx={{
                 color: "#2563EB",
@@ -136,6 +185,6 @@ export const LoginView: React.FC = () => {
           </Typography>
         </Box>
       </Paper>
-    </AuthShell>
+    </Box>
   );
 };
