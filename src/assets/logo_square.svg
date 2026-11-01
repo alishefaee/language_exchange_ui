@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none" role="img" aria-label="lc">
+  <!-- Surface Card with 1px Structural Border -->
+  <rect x="0.5" y="0.5" width="31" height="31" rx="7.5" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1" />
+
+  <!-- "lc" Monogram + Cobalt Dot -->
+  <text x="6" y="22" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif" font-size="18" font-weight="700" letter-spacing="-0.72" fill="#0F172A">lc</text>
+  <circle cx="24" cy="16" r="2.5" fill="#2563EB" />
+</svg>

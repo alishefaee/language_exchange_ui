@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 148 32" width="148" height="32" fill="none" role="img" aria-label="lingo collab">
+  <!-- Primary Segment: "lingo" -->
+  <text x="0" y="23" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif" font-size="22" font-weight="700" letter-spacing="-0.66" fill="#0F172A">lingo</text>
+
+  <!-- Connector: 6x6px Cobalt Interpunct Dot -->
+  <circle cx="58" cy="16" r="3" fill="#2563EB" />
+
+  <!-- Secondary Segment: "collab" -->
+  <text x="65" y="23" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif" font-size="22" font-weight="500" letter-spacing="-0.44" fill="#64748B">collab</text>
+</svg>
