@@ -1,60 +1,52 @@
+// src/features/auth/LoginView.tsx
 import React, { useState } from "react";
-import { Box, Paper, Typography, TextField, Button, Link, Alert } from "@mui/material";
+import {
+  Box,
+  Paper,
+  Typography,
+  TextField,
+  Button,
+  Alert,
+  Link,
+  CircularProgress,
+} from "@mui/material";
 import { Link as RouterLink, useNavigate } from "react-router";
 import { useAuth } from "../../hooks/useAuth";
-import { ApiError, ApiStatus } from "../../types/api";
+import { ApiError } from "../../types/api";
 
 export const LoginView: React.FC = () => {
-  const { login, isLoading } = useAuth();
   const navigate = useNavigate();
+  const { login, isLoading } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
-  const [generalError, setGeneralError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(null);
     setFieldErrors({});
-    setGeneralError(null);
+
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !password) {
+      setErrorMessage("Please enter both your email and password.");
+      return;
+    }
 
     try {
-      const loggedInUser = await login({ email, password });
-      if (loggedInUser.onboardingStep !== "completed") {
-        navigate("/onboarding", { replace: true });
-      } else {
-        navigate("/discover", { replace: true });
-      }
+      await login({ email: trimmedEmail, password });
+      navigate("/onboarding", { replace: true });
     } catch (err) {
       if (err instanceof ApiError) {
-        if (err.status === ApiStatus.VALIDATION_FAILED && err.fieldErrors) {
+        if (err.fieldErrors) {
           setFieldErrors(err.fieldErrors);
-        } else {
-          setGeneralError(err.message);
         }
+        setErrorMessage(err.message);
       } else {
-        setGeneralError("Unable to connect to the server.");
+        setErrorMessage("Unable to sign in right now. Please try again.");
       }
     }
-  };
-
-  const inputStyles = {
-    "& .MuiOutlinedInput-root": {
-      height: "44px",
-      backgroundColor: "#F8FAFC",
-      borderRadius: "0.5rem",
-      "& fieldset": { borderColor: "#E2E8F0" },
-      "&:hover fieldset": { borderColor: "#94A3B8" },
-      "&.Mui-focused": {
-        backgroundColor: "#FFFFFF",
-        "& fieldset": { borderColor: "#2563EB", borderWidth: "1px" },
-      },
-    },
-    "& .MuiInputBase-input": {
-      padding: "0 12px",
-      fontSize: "15px",
-      color: "#0F172A",
-    },
   };
 
   return (
@@ -64,6 +56,8 @@ export const LoginView: React.FC = () => {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
+        py: 4,
+        px: 2,
       }}
     >
       <Paper
@@ -72,119 +66,80 @@ export const LoginView: React.FC = () => {
         noValidate
         sx={{
           width: "100%",
-          maxWidth: "400px",
-          p: "1.5rem",
+          maxWidth: 420,
+          p: { xs: 3, sm: 4 },
           borderRadius: "1rem",
-          backgroundColor: "#FFFFFF",
           border: "1px solid #E2E8F0",
           display: "flex",
           flexDirection: "column",
-          gap: "1rem",
+          gap: 2.5,
         }}
       >
-        <Box sx={{ mb: "0.25rem" }}>
-          <Typography variant="h2" sx={{ color: "#0F172A", mb: "0.25rem" }}>
-            Sign in
+        <Box>
+          <Typography variant="h4" sx={{ fontWeight: 700, color: "#0F172A", mb: 0.5 }}>
+            Welcome back
           </Typography>
           <Typography variant="body2" sx={{ color: "#64748B" }}>
-            Enter your credentials to access your language threads.
+            Sign in to connect with your language partners.
           </Typography>
         </Box>
 
-        {generalError && (
-          <Alert
-            severity="error"
-            sx={{
-              borderRadius: "0.5rem",
-              border: "1px solid #EF4444",
-              backgroundColor: "#FEF2F2",
-              color: "#991B1B",
-              py: 0.5,
-            }}
-          >
-            {generalError}
+        {errorMessage && (
+          <Alert severity="error" sx={{ borderRadius: "0.5rem" }}>
+            {errorMessage}
           </Alert>
         )}
 
-        <Box sx={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
-          <Typography
-            component="label"
-            htmlFor="email"
-            sx={{ fontSize: "12px", fontWeight: 500, color: "#0F172A", letterSpacing: "0.01em" }}
-          >
-            Email address
-          </Typography>
-          <TextField
-            id="email"
-            type="email"
-            placeholder="you@example.com"
-            required
-            fullWidth
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            error={Boolean(fieldErrors.email?.length)}
-            helperText={fieldErrors.email?.[0]}
-            sx={inputStyles}
-          />
-        </Box>
+        <TextField
+          label="Email address"
+          type="email"
+          name="email"
+          autoComplete="email"
+          required
+          fullWidth
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          error={Boolean(fieldErrors.email?.length)}
+          helperText={fieldErrors.email?.[0]}
+          disabled={isLoading}
+        />
 
-        <Box sx={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
-          <Typography
-            component="label"
-            htmlFor="password"
-            sx={{ fontSize: "12px", fontWeight: 500, color: "#0F172A", letterSpacing: "0.01em" }}
-          >
-            Password
-          </Typography>
-          <TextField
-            id="password"
-            type="password"
-            placeholder="••••••••"
-            required
-            fullWidth
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            error={Boolean(fieldErrors.password?.length)}
-            helperText={fieldErrors.password?.[0]}
-            sx={inputStyles}
-          />
-        </Box>
+        <TextField
+          label="Password"
+          type="password"
+          name="password"
+          autoComplete="current-password"
+          required
+          fullWidth
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          error={Boolean(fieldErrors.password?.length)}
+          helperText={fieldErrors.password?.[0]}
+          disabled={isLoading}
+        />
 
         <Button
           type="submit"
           variant="contained"
-          color="primary"
-          fullWidth
+          size="large"
           disabled={isLoading}
-          sx={{ mt: "0.5rem" }}
+          sx={{ py: 1.25, fontWeight: 600 }}
         >
-          {isLoading ? "Signing in..." : "Log in"}
+          {isLoading ? <CircularProgress size={22} color="inherit" /> : "Log in"}
         </Button>
 
-        <Box
-          sx={{
-            pt: "0.75rem",
-            borderTop: "1px solid #F1F5F9",
-            textAlign: "center",
-          }}
-        >
-          <Typography variant="caption" sx={{ color: "#64748B" }}>
-            Don&apos;t have an account?{" "}
-            <Link
-              component={RouterLink}
-              to="/register"
-              underline="none"
-              sx={{
-                color: "#2563EB",
-                fontWeight: 600,
-                "&:hover": { textDecoration: "underline" },
-              }}
-            >
-              Create account
-            </Link>
-          </Typography>
-        </Box>
+        <Typography variant="body2" sx={{ textAlign: "center", color: "#64748B" }}>
+          Don&apos;t have an account?{" "}
+          <Link
+            component={RouterLink}
+            to="/register"
+            underline="hover"
+            sx={{ fontWeight: 600, color: "#2563EB" }}
+          >
+            Create one
+          </Link>
+        </Typography>
       </Paper>
     </Box>
   );
-};
+}; 

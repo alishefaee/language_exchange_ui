@@ -1,8 +1,9 @@
 // src/features/onboarding/AvatarUploader.tsx
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Box, Avatar, Button, Typography, CircularProgress } from "@mui/material";
 import { usersApi } from "../../api/users.api";
 import { API_BASE_URL } from "../../api/client";
+import { compressAvatarImage } from "../../utils/imageCompressor";
 
 interface AvatarUploaderProps {
   avatarUrl: string;
@@ -16,33 +17,54 @@ export const AvatarUploader: React.FC<AvatarUploaderProps> = ({
   onError,
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [isCompressing, setIsCompressing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [localPreview, setLocalPreview] = useState<string | null>(null);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // Clean up object URL on unmount or replacement
+  useEffect(() => {
+    return () => {
+      if (localPreview) {
+        URL.revokeObjectURL(localPreview);
+      }
+    };
+  }, [localPreview]);
 
-    if (!file.type.startsWith("image/")) {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawFile = e.target.files?.[0];
+    // Reset input so selecting the same file again still triggers onChange
+    e.target.value = "";
+    if (!rawFile) return;
+
+    if (!rawFile.type.startsWith("image/")) {
       onError("Please select a valid image file (PNG, JPG, or WebP).");
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      onError("Image size must be under 5MB.");
-      return;
-    }
-
-    const previewUrl = URL.createObjectURL(file);
-    setLocalPreview(previewUrl);
-    setIsUploading(true);
+    setIsCompressing(true);
     setUploadProgress(0);
 
     try {
-      // Single-step upload directly to the backend host
+      // 1. Compress & center-crop on client side before checking the 5MB upload limit
+      const compressedFile = await compressAvatarImage(rawFile, {
+        maxDimension: 512,
+        quality: 0.82,
+        outputType: "image/webp",
+      });
+
+      const previewUrl = URL.createObjectURL(compressedFile);
+      setLocalPreview((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return previewUrl;
+      });
+
+      setIsCompressing(false);
+      setIsUploading(true);
+
+      // 2. Upload compressed WebP file to POST /api/v1/users/avatar
       const { avatarUrl: uploadedPath } = await usersApi.uploadAvatar(
-        file,
+        compressedFile,
         (percent) => setUploadProgress(percent)
       );
 
@@ -51,15 +73,17 @@ export const AvatarUploader: React.FC<AvatarUploaderProps> = ({
       onError(
         err instanceof Error
           ? err.message
-          : "Failed to upload avatar. You can try again or skip for now."
+          : "Failed to process or upload avatar. You can try again or skip for now."
       );
       setLocalPreview(null);
     } finally {
+      setIsCompressing(false);
       setIsUploading(false);
     }
   };
 
-  // If the backend returns a relative path (e.g. "/uploads/abc.jpg"), prepend API_BASE_URL
+  const isBusy = isCompressing || isUploading;
+
   const resolvedAvatarSrc =
     localPreview ||
     (avatarUrl
@@ -95,7 +119,7 @@ export const AvatarUploader: React.FC<AvatarUploaderProps> = ({
         >
           LC
         </Avatar>
-        {isUploading && (
+        {isBusy && (
           <Box
             sx={{
               position: "absolute",
@@ -108,7 +132,7 @@ export const AvatarUploader: React.FC<AvatarUploaderProps> = ({
             }}
           >
             <CircularProgress
-              variant={uploadProgress > 0 ? "determinate" : "indeterminate"}
+              variant={!isCompressing && uploadProgress > 0 ? "determinate" : "indeterminate"}
               value={uploadProgress}
               size={28}
               sx={{ color: "#FFFFFF" }}
@@ -122,9 +146,11 @@ export const AvatarUploader: React.FC<AvatarUploaderProps> = ({
           Profile photo
         </Typography>
         <Typography variant="caption" sx={{ color: "#64748B" }}>
-          {isUploading
+          {isCompressing
+            ? "Optimizing image..."
+            : isUploading
             ? `Uploading (${uploadProgress}%)...`
-            : "JPG, PNG, or WebP up to 5MB."}
+            : "JPG, PNG, or WebP (auto-compressed)."}
         </Typography>
       </Box>
 
@@ -138,7 +164,7 @@ export const AvatarUploader: React.FC<AvatarUploaderProps> = ({
 
       <Button
         variant="outlined"
-        disabled={isUploading}
+        disabled={isBusy}
         onClick={() => fileInputRef.current?.click()}
         sx={{ fontSize: "13px", fontWeight: 600, px: 2 }}
       >

@@ -1,9 +1,11 @@
+// src/components/common/NotFoundView.tsx
 import React from "react";
 import { Box, Paper, Typography, Button } from "@mui/material";
-import { Link as RouterLink } from "react-router";
+import { useNavigate } from "react-router";
 import { useAuth } from "../../hooks/useAuth";
 
 export const NotFoundView: React.FC = () => {
+  const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
 
   return (
@@ -13,46 +15,38 @@ export const NotFoundView: React.FC = () => {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
+        py: 4,
+        px: 2,
       }}
     >
       <Paper
         sx={{
           width: "100%",
-          maxWidth: "400px",
-          p: "1.5rem",
+          maxWidth: 420,
+          p: 4,
           borderRadius: "1rem",
+          border: "1px solid #E2E8F0",
           textAlign: "center",
           display: "flex",
           flexDirection: "column",
-          gap: "1rem",
+          gap: 2,
         }}
       >
-        <Typography
-          sx={{
-            fontSize: "12px",
-            fontWeight: 600,
-            color: "#2563EB",
-            letterSpacing: "0.04em",
-            textTransform: "uppercase",
-          }}
-        >
-          Error 404
+        <Typography variant="h2" sx={{ fontWeight: 800, color: "#2563EB" }}>
+          404
         </Typography>
-        <Typography variant="h2" sx={{ color: "#0F172A" }}>
+        <Typography variant="h5" sx={{ fontWeight: 700, color: "#0F172A" }}>
           Page not found
         </Typography>
         <Typography variant="body2" sx={{ color: "#64748B" }}>
-          The page you are looking for does not exist or has been moved.
+          The page you are looking for doesn&apos;t exist or has been moved.
         </Typography>
         <Button
-          component={RouterLink}
-          to={isAuthenticated ? "/discover" : "/login"}
           variant="contained"
-          color="primary"
-          fullWidth
-          sx={{ mt: "0.5rem" }}
+          onClick={() => navigate(isAuthenticated ? "/onboarding" : "/login", { replace: true })}
+          sx={{ mt: 1, alignSelf: "center", px: 3 }}
         >
-          {isAuthenticated ? "Back to Discover" : "Go to Log in"}
+          {isAuthenticated ? "Go to Onboarding" : "Back to Login"}
         </Button>
       </Paper>
     </Box>

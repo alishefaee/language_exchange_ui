@@ -1,5 +1,5 @@
 // src/features/onboarding/onboardingConstants.ts
-import { ProficiencyLevel } from "../../api/users.api";
+import type { GenderType, ProficiencyLevel } from "../../api/users.api";
 
 export interface CountryOption {
   code: string;
@@ -13,12 +13,18 @@ export interface LanguageOption {
   flag: string;
 }
 
-export const CEFR_LEVELS: ProficiencyLevel[] = ["A1", "A2", "B1", "B2", "C1", "C2"];
+export const LEARNING_PROFICIENCY_LEVELS: { value: ProficiencyLevel; label: string }[] = [
+  { value: "beginner", label: "Beginner" },
+  { value: "intermediate", label: "Intermediate" },
+  { value: "advanced", label: "Advanced" },
+  { value: "fluent", label: "Fluent" },
+];
 
-export const GENDER_OPTIONS = [
+export const GENDER_OPTIONS: { value: GenderType; label: string }[] = [
   { value: "male", label: "Male" },
   { value: "female", label: "Female" },
-  { value: "non_binary", label: "Non-binary" },
+  { value: "non-binary", label: "Non-binary" }, // Fixed: hyphenated per Swagger enum
+  { value: "other", label: "Other" },           // Added: supported by Swagger enum
   { value: "prefer_not_to_say", label: "Prefer not to say" },
 ];
 
@@ -51,11 +57,11 @@ export const LANGUAGES_LIST: LanguageOption[] = [
   { code: "fr", name: "French", flag: "🇫🇷" },
   { code: "de", name: "German", flag: "🇩🇪" },
   { code: "it", name: "Italian", flag: "🇮🇹" },
-  { code: "pt", name: "Portuguese", flag: "🇧🇷" },
+  { code: "pt", name: "Portuguese", flag: "🇵🇹" },
   { code: "ja", name: "Japanese", flag: "🇯🇵" },
   { code: "ko", name: "Korean", flag: "🇰🇷" },
   { code: "zh", name: "Mandarin", flag: "🇨🇳" },
-  { code: "ar", name: "Arabic", flag: "🇪🇬" },
+  { code: "ar", name: "Arabic", flag: "🇸🇦" },
   { code: "ru", name: "Russian", flag: "🇷🇺" },
   { code: "tr", name: "Turkish", flag: "🇹🇷" },
   { code: "nl", name: "Dutch", flag: "🇳🇱" },

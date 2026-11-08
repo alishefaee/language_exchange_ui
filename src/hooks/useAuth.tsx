@@ -62,7 +62,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (credentials: AuthCredentials): Promise<IUser> => {
     setIsLoading(true);
     try {
+      console.log("Attempting login before:", credentials);
       const res = await authApi.login(credentials);
+      console.log("Login response:", res);
       return handleAuthSuccess(res);
     } finally {
       setIsLoading(false);
