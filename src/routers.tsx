@@ -4,7 +4,7 @@ import { PageLayout } from "./components/layout/PageLayout";
 import { AuthGuard, GuestGuard } from "./features/auth/AuthGuard";
 import { LoginView } from "./features/auth/LoginView";
 // import { RegisterView } from "./features/auth/RegisterView";
-// import { OnboardingWizard } from "./features/onboarding/OnboardingWizard";
+import { OnboardingWizard } from "./features/onboarding/OnboardingWizard";
 // import { DiscoverView } from "./features/search/DiscoverView";
 // import { ConversationListView } from "./features/chat/ConversationListView";
 // import { ChatThreadView } from "./features/chat/ChatThreadView";
@@ -34,7 +34,7 @@ export const routeConfig: RouteObject[] = [
       {
         element: <AuthGuard />,
         children: [
-        //   { path: "onboarding", element: <OnboardingWizard /> },
+          { path: "onboarding", element: <OnboardingWizard /> },
         //   { path: "discover", element: <DiscoverView /> },
         //   { path: "chats", element: <ConversationListView /> },
         //   { path: "chats/:conversationId", element: <ChatThreadView /> },

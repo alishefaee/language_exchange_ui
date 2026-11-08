@@ -1,6 +1,6 @@
 import { type ApiResponse, ApiStatus, ApiError, type AuthTokens } from "../types/api";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
 const ACCESS_TOKEN_KEY = "lc_access_token";
 const REFRESH_TOKEN_KEY = "lc_refresh_token";
