@@ -1,3 +1,4 @@
+// src/api/auth.api.ts
 import { apiClient } from "./client";
 import type { IUser } from "../types/api";
 
@@ -9,6 +10,8 @@ export interface AuthCredentials {
 export interface RawAuthResponse {
   access_token: string;
   refresh_token: string;
+  expires_in?: number;
+  token_type?: string;
   user: IUser;
 }
 
@@ -26,13 +29,8 @@ export const authApi = {
     }),
 
   logout: (refreshToken: string | null) =>
-    apiClient<null>("/api/v1/auth/logout", {
+    apiClient<{ message: string }>("/api/v1/auth/logout", {
       method: "POST",
       body: JSON.stringify({ refresh_token: refreshToken }),
     }),
-
-  // logoutAllDevices: () =>
-  //   apiClient<null>("/api/v1/auth/logout-all", {
-  //     method: "POST",
-  //   }),
 };

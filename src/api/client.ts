@@ -1,4 +1,9 @@
-import { type ApiResponse, ApiStatus, ApiError, type AuthTokens } from "../types/api";
+import {
+  ApiError,
+  type ApiResponse,
+  ApiStatus,
+  type AuthTokens,
+} from "../types/api";
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -45,10 +50,11 @@ async function rotateTokens(): Promise<AuthTokens | null> {
       return null;
     }
 
-    const payload: ApiResponse<{ access_token: string; refresh_token: string }> =
-      await response.json();
+    const payload: ApiResponse<
+      { access_token: string; refresh_token: string }
+    > = await response.json();
 
-    if (payload.status === ApiStatus.OK || payload.status === ApiStatus.CREATED) {
+    if (payload.code === ApiStatus.OK || payload.code === ApiStatus.CREATED) {
       const newTokens: AuthTokens = {
         accessToken: payload.data.access_token,
         refreshToken: payload.data.refresh_token,
@@ -68,7 +74,7 @@ async function rotateTokens(): Promise<AuthTokens | null> {
 export async function apiClient<T>(
   endpoint: string,
   options: RequestInit = {},
-  isRetry = false
+  isRetry = false,
 ): Promise<T> {
   const accessToken = tokenStorage.getAccessToken();
 
@@ -88,16 +94,21 @@ export async function apiClient<T>(
   let body: ApiResponse<T> | null = null;
   try {
     body = await response.json();
+    console.log("API response body:", body);
   } catch {
-    // Non-JSON response fallback
+    console.warn(
+      "Failed to parse JSON response from API:",
+      response.status,
+      response.statusText,
+    );
   }
 
   // Intercept ApiStatus.AUTH_TOKEN_EXPIRED (2004 / HTTP 401)
   if (
     !isRetry &&
-    (body?.status === ApiStatus.AUTH_TOKEN_EXPIRED || response.status === 401) &&
+    (body?.code === ApiStatus.AUTH_TOKEN_EXPIRED || response.status === 401) &&
     !endpoint.includes("/api/v1/auth/login") &&
-    !endpoint.includes("/api/v1/auth/Refresh")
+    !endpoint.toLowerCase().includes("/api/v1/auth/refresh")
   ) {
     if (!refreshPromise) {
       refreshPromise = rotateTokens().finally(() => {
@@ -107,16 +118,14 @@ export async function apiClient<T>(
 
     const rotated = await refreshPromise;
     if (rotated) {
-      // Retry the original request transparently with the new access token
       return apiClient<T>(endpoint, options, true);
     } else {
-      // Refresh failed: clear session and notify router guard to redirect to /login
       tokenStorage.clearTokens();
       onUnauthorizedCallback?.();
       throw new ApiError(
         "Session expired. Please log in again.",
         ApiStatus.AUTH_TOKEN_EXPIRED,
-        401
+        401,
       );
     }
   }
@@ -125,24 +134,44 @@ export async function apiClient<T>(
   if (
     response.ok &&
     body &&
-    (body.status === ApiStatus.OK || body.status === ApiStatus.CREATED)
+    (body.code === ApiStatus.OK || body.code === ApiStatus.CREATED)
   ) {
     return body.data;
   }
 
-  // Map VALIDATION_FAILED (3001 / HTTP 400) field arrays
-  if (body?.status === ApiStatus.VALIDATION_FAILED) {
+  if (
+    body?.code === ApiStatus.VALIDATION_FAILED &&
+    body.data &&
+    typeof body.data === "object"
+  ) {
+    const fieldErrors = body.data as unknown as Record<string, string[]>;
+    const firstError = Object.values(fieldErrors)[0]?.[0];
     throw new ApiError(
-      body.message || "Validation failed",
+      firstError || "Please check your input and try again.",
       ApiStatus.VALIDATION_FAILED,
       response.status,
-      body.data as unknown as Record<string, string[]>
+      fieldErrors,
     );
   }
 
+  if (body?.code === ApiStatus.AUTH_USER_NOT_FOUND) {
+    throw new ApiError(
+      "Invalid email or password.",
+      ApiStatus.AUTH_USER_NOT_FOUND,
+      response.status,
+    );
+  }
+
+  const nestedErrorMessage = body?.data &&
+      typeof body.data === "object" &&
+      "message" in body.data &&
+      typeof (body.data as { message?: unknown }).message === "string"
+    ? (body.data as { message: string }).message
+    : undefined;
+
   throw new ApiError(
-    body?.message || "An unexpected error occurred",
-    body?.status || (response.status as ApiStatus),
-    response.status
+    nestedErrorMessage || body?.message || "An unexpected error occurred",
+    body?.code || (response.status as ApiStatus),
+    response.status,
   );
 }

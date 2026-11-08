@@ -2,27 +2,45 @@
 import { apiClient, API_BASE_URL, tokenStorage } from "./client";
 import { type ApiResponse, ApiStatus, type IUser } from "../types/api";
 
-export type ProficiencyLevel = "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "Native";
+export type ProficiencyLevel =
+  | "beginner"
+  | "intermediate"
+  | "advanced"
+  | "fluent"
+  | "native";
+
+export type GenderType =
+  | "male"
+  | "female"
+  | "non-binary"
+  | "other"
+  | "prefer_not_to_say";
+
+export interface LanguageProficiencyEntry {
+  languageCode: string;
+  proficiency: ProficiencyLevel;
+}
 
 export interface OnboardingProfilePayload {
   dateOfBirth?: string;
-  gender?: string;
+  gender?: GenderType;
   religion?: string;
   countryOfOrigin?: string;
   countryOfResidence?: string;
-  nativeLanguages?: string[];
-  learningLanguages?: Array<{ language: string; level: ProficiencyLevel }>;
+  nativeLanguages?: LanguageProficiencyEntry[];
+  learningLanguages?: LanguageProficiencyEntry[];
   bio?: string;
   avatarUrl?: string;
 }
 
 export interface AvatarUploadResponse {
-  avatarUrl: string; // e.g., "/uploads/avatars/user91879756.webp" or full URL
+  avatarUrl: string;
+  avatarUri?: string;
 }
 
 export const usersApi = {
   /**
-   * Uploads the avatar image directly to the backend host via multipart/form-data
+   * Uploads the avatar image directly to POST /api/v1/users/avatar via multipart/form-data
    * with upload progress tracking.
    */
   uploadAvatar: (
@@ -53,14 +71,38 @@ export const usersApi = {
       xhr.onload = () => {
         try {
           const body: ApiResponse<AvatarUploadResponse> = JSON.parse(xhr.responseText);
+
+          // FIXED: Swagger returns `body.code` (1000 = OK, 1001 = CREATED), NOT `body.status`
           if (
             xhr.status >= 200 &&
             xhr.status < 300 &&
-            (body.status === ApiStatus.OK || body.status === ApiStatus.CREATED)
+            (body.code === ApiStatus.OK || body.code === ApiStatus.CREATED)
           ) {
             resolve(body.data);
           } else {
-            reject(new Error(body.message || `Upload failed (${xhr.status})`));
+            // Extract detailed validation or error message from Swagger error format
+            const fieldErrorMsg =
+              body.code === ApiStatus.VALIDATION_FAILED &&
+              body.data &&
+              typeof body.data === "object" &&
+              "avatar" in body.data &&
+              Array.isArray((body.data as Record<string, string[]>).avatar)
+                ? (body.data as Record<string, string[]>).avatar[0]
+                : undefined;
+
+            const nestedMsg =
+              body.data &&
+              typeof body.data === "object" &&
+              "message" in body.data &&
+              typeof (body.data as { message?: string }).message === "string"
+                ? (body.data as { message: string }).message
+                : undefined;
+
+            reject(
+              new Error(
+                fieldErrorMsg || nestedMsg || body.message || `Upload failed (${xhr.status})`
+              )
+            );
           }
         } catch {
           reject(new Error("Invalid response from server during avatar upload"));
